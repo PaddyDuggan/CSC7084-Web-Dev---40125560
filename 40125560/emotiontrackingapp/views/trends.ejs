@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trends</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+      crossorigin="anonymous"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" integrity="sha512-ZwR1/gSZM3ai6vCdI+LVF1zSq/5HznD3ZSTk7kajkaj4D292NLuduDCO1c/NT8Id+jE58KYLKT7hXnbtryGmMg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link href="/mystyles.css" rel="stylesheet"> 
+   
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg bg-primary fixed-top" data-bs-theme="dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/home"><img src="/imgs/moodlog-high-resolution-logo-transparent (2).png" alt="Logo" width="150" height="40" class="d-
+          inline-block align-text-center"></a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarSupportedContent"
+          aria-controls="navbarSupportedContent"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+              <a class="nav-link active" aria-current="page" href="/home">Home</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active" href="/record">Record</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active" href="/history">History</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active" href="/yourtrends">Your Trends</a>
+            </li>
+            </ul>
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+              <li class="nav-item">
+                <a class="btn btn-danger" href="/logout" role="button">Log Out</a>
+              </li>
+            </ul>
+
+      </div>
+    </nav>
+
+    <!-- Content Section -->
+    <div>
+        <h1 class="text-center shadow-sm mt-5 p-5">Your Trends</h1>
+      </div>
+
+      <!-- Check if the length of the array of keys in the 'emotions' object is greater than 0 -->
+      <% if (Object.keys(emotions).length > 0)  { %>
+        <!-- If it is then display the canvas for the charts to be displayed on -->
+        <div class="container-fluid px-5"> 
+          <div class="row">
+              <div class="col text-center bg-white"> 
+                  <canvas id="emotionsOverTime" width="100%" height="500px"></canvas> 
+              </div>
+          </div>
+  
+        <div class="row py-5">
+                      <div class="col text-center bg-white"> 
+                          <canvas id="averageEmotions" width="100%" height="500px"></canvas> 
+                      </div>
+  
+      </div>
+        </div>
+
+    <% } else { %>
+      <!-- If the array is not greather than 0 (there is no user snapshots) then display this and provide link to record snapshot-->
+      <div class="container my-5">
+        <div class="text-center">
+          <h4 class="text-danger bg-white d-inline-block p-3 p-2 rounded-pill">Nothing to show yet</h4>
+        </div>
+        <div class="text-center my-3">
+          <a href="/record" class="btn btn-success btn-lg">Create New Entry</a>
+      </div>
+    </div>
+    
+     
+    <% } %>
+    
+
+    <script>
+      // Retrieve emotions, dateTime and triggers data and parse them
+      const emotionsData = <%- JSON.stringify(emotions) %>;
+      const xlabels = <%- JSON.stringify(dateTime) %>;
+      const triggers = <%- JSON.stringify(triggers) %>;
+    
+      // Define custom colors for each emotion
+      const emotionColors = {
+          Enjoyment: 'green',
+          Sadness: 'blue',
+          Anger: 'red',
+          Contempt: 'purple',
+          Disgust: 'orange',
+          Fear: 'cyan',
+          Surprise: 'magenta'
+      };
+    
+      // Initialize an empty array to store datasets for line chart
+      const lineDatasets = [];
+    
+      // Iterate over each emotion in the emotions data for line chart
+      Object.keys(emotionsData).forEach(emotion => {
+          // Create a new dataset object for the current emotion for line chart
+          const dataset = {
+              label: emotion,
+              data: emotionsData[emotion],
+              lineTension: 0,
+              pointRadius: 3,
+              backgroundColor: emotionColors[emotion],
+              borderColor: emotionColors[emotion], // Use custom color for each emotion
+              borderWidth: 1
+          };
+          
+          // Push the dataset to the datasets array for line chart
+          lineDatasets.push(dataset);
+      });
+    
+      // Create chart data object with all datasets for line chart
+      const lineChartData = {
+          labels: xlabels,
+          datasets: lineDatasets
+      };
+  
+      // Define chart configuration for line chart
+      const lineChartConfig = {
+          type: 'line',
+          data: lineChartData,
+          options: {
+              responsive: true,
+              animation: true,
+              maintainAspectRatio: false,
+              scales: {
+                  y: { min: 0, max: 100 }, 
+                  x: {
+                    ticks: {
+                      maxRotation: 100// Rotate x-axis labels if needed
+                    }
+                  }
+              },
+              plugins: {
+                  legend: {
+                      display: true,
+                      labels: {
+                          generateLabels: function(chart) {
+                              // Generate labels dynamically based on datasets
+                              return lineDatasets.map(dataset => ({
+                                  text: dataset.label.charAt(0).toUpperCase() + dataset.label.slice(1), // Capitalize first letter
+                                  fillStyle: emotionColors[dataset.label],
+                                  strokeStyle: dataset.borderColor,
+                                  lineWidth: dataset.borderWidth
+                              }));
+                          }
+                      }
+                  },
+                tooltip: {
+                enabled: true,
+                callbacks: {
+                    // Customize tooltip to include trigger information
+                    label: function(context) {
+                        let label = context.dataset.label || '';
+                        if (context.parsed.y !== null) {
+                            label += ': ' + context.parsed.y;
+                        }
+                        const trigger = triggers[context.dataIndex]; // Get trigger for current data point
+                        if (trigger) {
+                            label += ' - Trigger: ' + trigger;
+                        }
+                        return label;
+                    }
+                }
+            },
+                  title: {
+                      display: true,
+                      text: 'Emotions Over Time',
+                      font: { size: 20 }
+                  }
+              }
+          }
+      };
+  
+      // Create new chart instance for line chart
+      const lineChart = new Chart('emotionsOverTime', lineChartConfig);
+
+
+      //Creating a bar chart to display the average recorded value of each emotion
+  
+      // Calculate average value for each emotion
+      const averages = {};
+      // Iterate over each key in the 'emotionsData' object
+      Object.keys(emotionsData).forEach(emotion => {
+          const values = emotionsData[emotion]; // Retrieve the array of values for the current emotion
+          const sum = values.reduce((acc, curr) => acc + curr, 0); // Calculate the sum of all values for the current emotion
+          const average = sum / values.length; // Calculate the average value for the current emotion
+          averages[emotion] = average; // Store the calculated average value for the current emotion in the 'averages' object
+      });
+  
+      // Initialize an array to store dataset for bar chart
+      const barDatasets = [{
+          label: 'Average Emotion Value',
+          data: Object.values(averages), // Use average values as data
+          backgroundColor: Object.keys(emotionsData).map(emotion => emotionColors[emotion]), // Use custom colors for each emotion
+          borderWidth: 1
+      }];
+  
+      // Create chart data object with the dataset for bar chart
+      const barChartData = {
+          labels: Object.keys(emotionsData), // Use emotion names as x labels
+          datasets: barDatasets
+      };
+  
+      // Define chart configuration for bar chart
+      const barChartConfig = {
+          type: 'bar', // Use bar chart type
+          data: barChartData,
+          options: {
+              responsive: true,
+              animation: true,
+              maintainAspectRatio: false,
+              scales: {
+                  y: {
+                    min: 0, 
+                    max: 100 
+                  }
+              },
+              plugins: {
+                  legend: {
+                      display: true,
+                      labels: {
+                          generateLabels: function(chart) {
+                              // Generate labels dynamically based on datasets
+                              return barDatasets.map(dataset => ({
+                                  text: dataset.label.charAt(0).toUpperCase() + dataset.label.slice(1), // Capitalize first letter
+                                  fillStyle: dataset.backgroundColor[0], 
+                                  strokeStyle: dataset.backgroundColor[0], 
+                                  lineWidth: dataset.borderWidth
+                              }));
+                          }
+                      }
+                  },
+                  tooltip: { enabled: true },
+                  title: {
+                      display: true,
+                      text: 'Average Emotion Values',
+                      font: { size: 20 }
+                  }
+              }
+          }
+      };
+  
+      // Create new chart instance for bar chart
+      const barChart = new Chart('averageEmotions', barChartConfig);
+  </script>
+  
+  </body>
+</html>
